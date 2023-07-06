@@ -8,5 +8,7 @@ let command =
     ; "blur", Blur.command
     ; "dither", Dither.command
     ; "steganography", Steganography.command
+    ; "improved-bluescreen", Improved_blue_screen.command
+    ; "mosaic", Mosaic.command
     ]
 ;;

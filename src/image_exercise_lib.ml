@@ -10,5 +10,6 @@ let command =
     ; "steganography", Steganography.command
     ; "improved-bluescreen", Improved_blue_screen.command
     ; "mosaic", Mosaic.command
+    ; "edge-detection", Edge_detection.command
     ]
 ;;

@@ -20,29 +20,24 @@ let create_region image ~top_left_x ~top_left_y ~width ~height =
     ~y_end:(top_left_y + height)
 ;;
 
-let calculate_mean_sqare_error
+let calculate_mean_square_error
   image
   reference_region
   (top_left_region2 : int * int)
-  width
-  height
   : float
   =
   let region1 = reference_region in
-  let region2 =
-    create_region
-      image
-      ~top_left_x:(fst top_left_region2)
-      ~top_left_y:(snd top_left_region2)
-      ~width
-      ~height
-  in
   let image_height = Image.height image in
   let image_width = Image.width image in
   let total_squared_error =
     Image.foldi region1 ~init:0. ~f:(fun ~x ~y accu pixel ->
       accu
-      +. (get_squared_pixel_difference pixel (Image.get region2 ~x ~y)
+      +. (get_squared_pixel_difference
+            pixel
+            (Image.get
+               image
+               ~x:(fst top_left_region2 + x)
+               ~y:(snd top_left_region2 + y))
           |> sum_pixel_rgb_values))
   in
   total_squared_error /. Float.of_int (image_height * image_width)
@@ -67,10 +62,8 @@ let get_grid_positions image width height =
   |> List.concat
 ;;
 
-let find_min_grid_region image width height reference_region =
+let find_min_grid_region image reference_region grid_top_left_pos =
   let min_mse_and_region = Float.infinity, (0, 0) in
-  (* Divide the image into grids. *)
-  let grid_top_left_pos = get_grid_positions image width height in
   (* Iterate through the regions and select the region with the smallest
      mse. *)
   let min_mse_and_region =
@@ -79,12 +72,10 @@ let find_min_grid_region image width height reference_region =
       ~init:min_mse_and_region
       ~f:(fun (min_region_mse, min_region) top_left_other_region ->
       let current_mse =
-        calculate_mean_sqare_error
+        calculate_mean_square_error
           image
           reference_region
           top_left_other_region
-          width
-          height
       in
       if Float.( <. ) current_mse min_region_mse
       then current_mse, top_left_other_region
@@ -118,12 +109,12 @@ let swap_regions
     image)
 ;;
 
-let perform_region_swap image width height =
+let perform_region_swap image width height grid_positions =
   let top_left_x, top_left_y, reference_region =
     get_random_region image width height
   in
   let other_top_left_x, other_top_right_x =
-    find_min_grid_region image width height reference_region
+    find_min_grid_region image reference_region grid_positions
   in
   swap_regions
     image
@@ -133,17 +124,20 @@ let perform_region_swap image width height =
 ;;
 
 let transform image ~width ~height ~moves : Image.t =
-  let rec perform_n_region_swaps image width height n =
+  (* Divide the image into grids. *)
+  let grid_positions = get_grid_positions image width height in
+  let rec perform_n_region_swaps image width height n grid_positions =
     if n = 0
     then image
     else
       perform_n_region_swaps
-        (perform_region_swap image width height)
+        (perform_region_swap image width height grid_positions)
         width
         height
         (n - 1)
+        grid_positions
   in
-  perform_n_region_swaps image width height moves
+  perform_n_region_swaps image width height moves grid_positions
 ;;
 
 let command =
@@ -159,7 +153,7 @@ let command =
       fun () ->
         let image =
           Image.load_ppm ~filename
-          |> fun image -> transform image ~width:10 ~height:10 ~moves:1000
+          |> fun image -> transform image ~width:10 ~height:10 ~moves:10000
         in
         Image.save_ppm
           image

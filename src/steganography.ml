@@ -8,7 +8,7 @@ let transform image =
   in
   let brighten_image =
     Image.map lower_order_image ~f:(fun (r, g, b) ->
-      r * Int.( ** ) 2 6, g * Int.( ** ) 2 6, b * Int.( ** ) 2 6)
+      r lsl 6, g lsl 6, b lsl 6)
   in
   brighten_image
 ;;
